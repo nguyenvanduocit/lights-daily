@@ -1,0 +1,79 @@
+:root {
+  --bg: #11131a;
+  --fg: #e8e8ee;
+  --cell-off: #262a36;
+  --cell-on: #ffd34d;
+  --focus: #6cb6ff;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#app {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+}
+
+#help {
+  opacity: 0.8;
+}
+
+.moves {
+  font-size: 1.25rem;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+.cell {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--cell-off);
+  cursor: pointer;
+}
+
+.cell.on {
+  background: var(--cell-on);
+  box-shadow: 0 0 1rem var(--cell-on);
+}
+
+.cell[aria-disabled="true"] {
+  cursor: default;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.status {
+  min-height: 1.5em;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.copy {
+  padding: 0.6rem 1.4rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--focus);
+  color: var(--bg);
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
