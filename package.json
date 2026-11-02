@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run --reporter=verbose"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
