@@ -77,3 +77,14 @@ button:focus-visible {
   font-weight: bold;
   cursor: pointer;
 }
+
+.feedback {
+  display: block;
+  margin-top: 1rem;
+  color: var(--focus);
+}
+
+.feedback:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
