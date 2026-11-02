@@ -1,4 +1,5 @@
-import { SIZE, dailyBoard, isSolved, shareString } from "../core/index";
+import { SIZE, dailyBoard, isSolved, puzzleNumber, shareString } from "../core/index";
+import { feedbackUrl } from "./feedback";
 import { arrowTarget, press, type Game } from "./game";
 
 /** Renders today's puzzle into `root` and wires mouse and keyboard play. */
@@ -20,6 +21,9 @@ export function mountApp(root: HTMLElement, today: Date): void {
   let game: Game = { board: dailyBoard(today), moves: 0 };
   let focused = 0;
   let copyResult = "";
+  let feedbackEl: HTMLAnchorElement | null = null;
+
+  const share = () => shareString(today, game.moves, location.origin + location.pathname);
 
   const cells = Array.from({ length: SIZE * SIZE }, (_, i) => {
     const cell = document.createElement("button");
@@ -43,9 +47,8 @@ export function mountApp(root: HTMLElement, today: Date): void {
   });
 
   copyEl.addEventListener("click", async () => {
-    const url = location.origin + location.pathname;
     try {
-      await navigator.clipboard.writeText(shareString(today, game.moves, url));
+      await navigator.clipboard.writeText(share());
       copyResult = "Copied to clipboard.";
     } catch {
       copyResult = "Copy failed — try again.";
@@ -65,6 +68,16 @@ export function mountApp(root: HTMLElement, today: Date): void {
     movesEl.textContent = String(game.moves);
     statusEl.textContent = solved ? `Solved in ${game.moves} moves! ${copyResult}`.trim() : "";
     copyEl.hidden = !solved;
+    // Added to the page only once solved: a plain link, so nothing is sent until the player submits on GitHub.
+    if (solved && !feedbackEl) {
+      feedbackEl = document.createElement("a");
+      feedbackEl.className = "feedback";
+      feedbackEl.href = feedbackUrl(puzzleNumber(today), share());
+      feedbackEl.target = "_blank";
+      feedbackEl.rel = "noopener noreferrer";
+      feedbackEl.textContent = "Tell us what you thought";
+      copyEl.after(feedbackEl);
+    }
   }
 
   render();
