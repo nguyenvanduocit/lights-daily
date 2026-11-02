@@ -75,12 +75,16 @@ test("mouse: solve today's puzzle and copy the share string", async ({ page, bas
   const solution = solve(await readBoard(page));
   expect(solution.length).toBeGreaterThan(0);
   await expect(moveCounter(page)).toHaveText("0");
-  await page.screenshot({ path: `${SCREENSHOTS}/start.png` });
+  await page.screenshot({ path: `${SCREENSHOTS}/start.png`, fullPage: true });
 
   for (const [i, index] of solution.entries()) {
     await cell(page, index).click();
     await expect(moveCounter(page)).toHaveText(String(i + 1));
-    if (i === 0 && solution.length > 1) await page.screenshot({ path: `${SCREENSHOTS}/mid.png` });
+    if (i === 0) {
+      // Mid-game: one move made, board not solved yet. Fails if today's board is a one-move solve.
+      await expect(page.getByRole("status")).toHaveText("");
+      await page.screenshot({ path: `${SCREENSHOTS}/mid.png`, fullPage: true });
+    }
   }
 
   expect(await readBoard(page)).toEqual(Array(SIZE * SIZE).fill(false));
@@ -93,10 +97,10 @@ test("mouse: solve today's puzzle and copy the share string", async ({ page, bas
   expect(await readBoard(page)).toEqual(Array(SIZE * SIZE).fill(false));
 
   await page.getByRole("button", { name: "Copy result" }).click();
-  await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText(`Solved in ${solution.length} moves! Copied to clipboard.`);
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(clipboard).toBe(expectedShare(solution.length, page.url()));
-  await page.screenshot({ path: `${SCREENSHOTS}/win.png` });
+  await page.screenshot({ path: `${SCREENSHOTS}/win.png`, fullPage: true });
 
   expectSameOrigin(requests, baseURL!);
 });
@@ -127,7 +131,7 @@ test("keyboard only: solve today's puzzle and copy the share string", async ({ p
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Copy result" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText(`Solved in ${solution.length} moves! Copied to clipboard.`);
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
   expect(clipboard).toBe(expectedShare(solution.length, page.url()));
 

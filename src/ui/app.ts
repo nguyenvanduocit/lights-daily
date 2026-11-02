@@ -6,18 +6,20 @@ export function mountApp(root: HTMLElement, today: Date): void {
   root.innerHTML = `
     <h1>Lights Daily</h1>
     <p id="help">Turn every light off. Pressing a cell flips it and its neighbours. Arrow keys move, Enter or Space presses.</p>
-    <p class="moves">Moves: <span data-testid="moves">0</span></p>
+    <p class="moves" aria-live="polite" aria-atomic="true">Moves: <span data-testid="moves">0</span></p>
     <div class="board" role="group" aria-label="Board" aria-describedby="help"></div>
     <p class="status" role="status"></p>
     <button class="copy" type="button" hidden>Copy result</button>
   `;
   const boardEl = root.querySelector<HTMLElement>(".board")!;
+  boardEl.style.setProperty("--size", String(SIZE));
   const movesEl = root.querySelector<HTMLElement>("[data-testid=moves]")!;
   const statusEl = root.querySelector<HTMLElement>(".status")!;
   const copyEl = root.querySelector<HTMLButtonElement>(".copy")!;
 
   let game: Game = { board: dailyBoard(today), moves: 0 };
   let focused = 0;
+  let copyResult = "";
 
   const cells = Array.from({ length: SIZE * SIZE }, (_, i) => {
     const cell = document.createElement("button");
@@ -44,10 +46,11 @@ export function mountApp(root: HTMLElement, today: Date): void {
     const url = location.origin + location.pathname;
     try {
       await navigator.clipboard.writeText(shareString(today, game.moves, url));
-      copyEl.textContent = "Copied";
+      copyResult = "Copied to clipboard.";
     } catch {
-      copyEl.textContent = "Copy failed — try again";
+      copyResult = "Copy failed — try again.";
     }
+    render();
   });
 
   function render(): void {
@@ -60,7 +63,7 @@ export function mountApp(root: HTMLElement, today: Date): void {
       cell.tabIndex = i === focused ? 0 : -1;
     });
     movesEl.textContent = String(game.moves);
-    statusEl.textContent = solved ? `Solved in ${game.moves} moves!` : "";
+    statusEl.textContent = solved ? `Solved in ${game.moves} moves! ${copyResult}`.trim() : "";
     copyEl.hidden = !solved;
   }
 
