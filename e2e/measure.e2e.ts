@@ -55,13 +55,14 @@ async function leave(page: Page): Promise<void> {
 }
 
 /**
- * Playwright sets navigator.webdriver, which the game counts as an agent and never measures. This hook
- * (window.__ldMeasureForce, see src/measure/measure.ts) makes the shipped bundle measure as for a player.
+ * Playwright sets navigator.webdriver, which the game counts as an agent and never measures. Reading it as false
+ * makes the page look like a player's browser, so the shipped bundle measures as it does for a player.
  */
-const forceMeasure = (page: Page) => page.addInitScript(() => Object.assign(window, { __ldMeasureForce: true }));
+const asPlayer = (page: Page) =>
+  page.addInitScript(() => Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }));
 
 test("a real-UI solve sends exactly one request, to <date>-s, and only when the page is hidden", async ({ page }) => {
-  await forceMeasure(page);
+  await asPlayer(page);
   await page.goto("/");
 
   for (const index of solve(await readBoard(page))) await cell(page, index).click();
@@ -70,7 +71,7 @@ test("a real-UI solve sends exactly one request, to <date>-s, and only when the 
   expect(received).toEqual([]);
 
   await leave(page);
-  expect(received.map((r) => `${r.method} ${r.url}`)).toEqual([`GET ${ABACUS}/hit/lights-daily-nvd/${today()}-s`]);
+  expect(received.map((r) => `${r.method} ${r.url}`)).toEqual([`GET ${ABACUS}/hit/lights-daily-plays/${today()}-s`]);
   const [{ headers }] = received;
   console.log(`analytics request as Abacus receives it: ${received[0].method} ${received[0].url}\n  headers: ${JSON.stringify(headers)}`);
   expect(headers).not.toHaveProperty("cookie");
@@ -80,7 +81,7 @@ test("a real-UI solve sends exactly one request, to <date>-s, and only when the 
 test("a fresh visit: every request listed, none to the counter before hide, one -v after leaving", async ({ page, context, baseURL }) => {
   const requests: string[] = [];
   context.on("request", (request) => requests.push(`${request.method()} ${request.url()}`));
-  await forceMeasure(page);
+  await asPlayer(page);
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
@@ -92,10 +93,10 @@ test("a fresh visit: every request listed, none to the counter before hide, one 
   await leave(page);
   const atAbacus = received.map((r) => `${r.method} ${r.url}`);
   console.log(`requests Abacus received after leaving (${atAbacus.length}):\n${atAbacus.map((r) => `  ${r}`).join("\n")}`);
-  expect(atAbacus).toEqual([`GET ${ABACUS}/hit/lights-daily-nvd/${today()}-v`]);
+  expect(atAbacus).toEqual([`GET ${ABACUS}/hit/lights-daily-plays/${today()}-v`]);
 });
 
-test("under webdriver without the hook, leaving sends nothing", async ({ page }) => {
+test("under webdriver, leaving sends nothing", async ({ page }) => {
   await page.goto("/");
   expect(await page.evaluate(() => navigator.webdriver)).toBe(true);
 

@@ -36,7 +36,7 @@ Lights Daily is a static site: no backend. Its one runtime network request is th
 
 ## Privacy
 
-When you leave or hide the page, the game sends one request, at most once per page load, to the public counter service [Abacus](https://abacus.jasoncameron.dev): `GET /hit/lights-daily-nvd/<YYYY-MM-DD>-<step>`. It carries only your local date and how far you got: `v` viewed, `s` solved, `sc` solved and copied the result, `sf` solved and clicked feedback, `scf` all three. There are no cookies, no referrer and no identifier, and the game stores nothing about you. Like any web request, Abacus's server sees your IP address. Automated browsers (`navigator.webdriver`) send nothing. Team devices opt out by opening the page once with `?team=1`; this sets `ld-team=1` in that browser's localStorage and removes the parameter from the address.
+When you leave or hide the page, the game sends one request, at most once per page load, to the public counter service [Abacus](https://abacus.jasoncameron.dev): `GET /hit/lights-daily-plays/<YYYY-MM-DD>-<step>`. It carries only your local date and how far you got: `v` viewed, `s` solved, `sc` solved and copied the result, `sf` solved and clicked feedback, `scf` all three. There are no cookies, no referrer and no identifier, and the game stores nothing about you. Like any web request, Abacus's server sees your IP address. Automated browsers (`navigator.webdriver`) send nothing. Team devices opt out by opening the page once with `?team=1`; this sets `ld-team=1` in that browser's localStorage and removes the parameter from the address.
 
 `ops/lights-daily-pull.mjs` reads these counters (read-only) for the team's play-count signal.
 

@@ -4,7 +4,7 @@
 // date and step (v viewed, s solved, sc + copied, sf + feedback clicked, scf all), for today and the 6 days before.
 // Prints one item whose id carries the counts, so each change is a new item; a missing counter (404) is 0, any other
 // failure an error line. ABACUS_URL and ABACUS_QUIET_MS exist for the test against a local fake Abacus.
-const NS = "lights-daily-nvd";
+const NS = "lights-daily-plays";
 const BASE = process.env.ABACUS_URL ?? "https://abacus.jasoncameron.dev";
 // Abacus limits each IP to 30 requests, and its count resets only after 10 s without one (gin-rate-limit's Redis store
 // keeps the time of the last hit, in whole seconds). So the 35 GETs go in bursts of at most 25, with 11 s of quiet between

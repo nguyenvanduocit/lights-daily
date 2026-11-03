@@ -15,11 +15,6 @@ export interface Host {
   localStorage: { getItem(key: string): string | null; setItem(key: string, value: string): void };
   fetch(input: string, init?: RequestInit): Promise<Response>;
   addEventListener(type: "pagehide", listener: () => void): void;
-  /**
-   * Set by the e2e tests (Playwright sets navigator.webdriver) so the shipped bundle measures as for a player.
-   * Nobody sets a window property by accident, and all it does is count that visit like any other.
-   */
-  __ldMeasureForce?: unknown;
 }
 
 /** What the game tells the measure as the player goes. */
@@ -36,7 +31,7 @@ const IGNORED: Measure = { solved() {}, copied() {}, feedback() {} };
  * today's furthest step. Agents (navigator.webdriver) and team devices send nothing; failures are silent.
  */
 export function startMeasure(host: Host, today: Date): Measure {
-  if (isTeam(host) || (host.navigator.webdriver && host.__ldMeasureForce !== true)) return IGNORED;
+  if (isTeam(host) || host.navigator.webdriver) return IGNORED;
 
   const visit: Visit = { solved: false, copied: false, feedback: false };
   let sent = false;

@@ -1,7 +1,8 @@
 import { dateKey } from "../core/index";
 
-/** Abacus namespace of the game's counters: one counter per local date and step. */
-const HIT = "https://abacus.jasoncameron.dev/hit/lights-daily-nvd";
+/** Abacus namespace of the game's counters: one counter per local date and step. ops/lights-daily-pull.mjs reads it. */
+export const NAMESPACE = "lights-daily-plays";
+const HIT = `https://abacus.jasoncameron.dev/hit/${NAMESPACE}`;
 
 /** What one page load did, as far as it got. */
 export interface Visit {

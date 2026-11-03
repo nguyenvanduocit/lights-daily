@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
+import { NAMESPACE } from "../src/measure/visit";
 
 const SCRIPT = readFileSync(new URL("./lights-daily-pull.mjs", import.meta.url), "utf8");
 const STEPS = ["v", "s", "sc", "sf", "scf"];
@@ -34,7 +35,7 @@ function fakeAbacus(counts: Record<string, number>, opts: { failKey?: string; un
     if (hits >= 30 && !opts.unlimited) return answer(429, '{"error":"Too many requests."}');
     hits++;
     last = now;
-    const m = /^\/get\/lights-daily-nvd\/([\w-]+)$/.exec(req.url!);
+    const m = /^\/get\/lights-daily-plays\/([\w-]+)$/.exec(req.url!);
     if (!m || req.method !== "GET") return answer(400, '{"error":"bad route"}');
     if (m[1] === opts.failKey) return answer(500, '{"error":"boom"}');
     if (!(m[1] in counts)) return answer(404, '{"error":"Key not found"}');
@@ -68,6 +69,10 @@ async function pull(counts: Record<string, number>, opts: { failKey?: string; qu
 }
 
 describe("lights-daily-pull.mjs", () => {
+  it("reads the namespace the game writes to (the script stays self-contained, so it holds its own copy)", () => {
+    expect(/^const NS = "([^"]+)";$/m.exec(SCRIPT)?.[1]).toBe(NAMESPACE);
+  });
+
   it("prints one item with today's and the 7-day counts; a missing key is 0", async () => {
     const counts = {
       [`${day(0)}-v`]: 5, [`${day(0)}-s`]: 3, [`${day(0)}-sc`]: 2, [`${day(0)}-sf`]: 1, [`${day(0)}-scf`]: 4,
@@ -87,7 +92,7 @@ describe("lights-daily-pull.mjs", () => {
       },
     ]);
     // Reads only: 7 days x 5 steps, every one a /get.
-    const expected = [0, 1, 2, 3, 4, 5, 6].flatMap((d) => STEPS.map((s) => `/get/lights-daily-nvd/${day(d)}-${s}`));
+    const expected = [0, 1, 2, 3, 4, 5, 6].flatMap((d) => STEPS.map((s) => `/get/lights-daily-plays/${day(d)}-${s}`));
     expect(seen.map((s) => s.path).sort()).toEqual(expected.sort());
   });
 
@@ -108,7 +113,7 @@ describe("lights-daily-pull.mjs", () => {
     server = abacus.server;
     const base = await listen(abacus.server);
     const statuses = [];
-    for (let i = 0; i < 31; i++) statuses.push((await fetch(`${base}/get/lights-daily-nvd/xxx`)).status);
+    for (let i = 0; i < 31; i++) statuses.push((await fetch(`${base}/get/lights-daily-plays/xxx`)).status);
     expect(statuses).toEqual([...Array(30).fill(404), 429]);
   });
 

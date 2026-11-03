@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { startMeasure, type Host, type Measure } from "./index";
 
 const TODAY = new Date(2026, 10, 3, 9, 30);
-const HIT = "https://abacus.jasoncameron.dev/hit/lights-daily-nvd/2026-11-03";
+const HIT = "https://abacus.jasoncameron.dev/hit/lights-daily-plays/2026-11-03";
 
 type Listener = () => void;
 
 /** A page as the measure sees it: events are fired by hand, requests and storage are recorded. */
-function fakePage(opts: { href?: string; webdriver?: boolean; storage?: Record<string, string>; force?: boolean } = {}) {
+function fakePage(opts: { href?: string; webdriver?: boolean; storage?: Record<string, string> } = {}) {
   const listeners: Record<string, Listener[]> = {};
   const on = (type: string, fn: Listener) => (listeners[type] ??= []).push(fn);
   const fire = (type: string) => (listeners[type] ?? []).forEach((fn) => fn());
@@ -29,7 +29,6 @@ function fakePage(opts: { href?: string; webdriver?: boolean; storage?: Record<s
       return Promise.resolve(new Response("{}"));
     },
     addEventListener: on,
-    __ldMeasureForce: opts.force,
   };
   const hide = () => {
     document.visibilityState = "hidden";
@@ -105,7 +104,7 @@ describe("startMeasure", () => {
     const page = fakePage();
     startMeasure(page.host, new Date(2026, 0, 9, 23, 59));
     page.hide();
-    expect(page.requests[0].url).toBe("https://abacus.jasoncameron.dev/hit/lights-daily-nvd/2026-01-09-v");
+    expect(page.requests[0].url).toBe("https://abacus.jasoncameron.dev/hit/lights-daily-plays/2026-01-09-v");
   });
 
   it("webdriver sends nothing", () => {
@@ -114,13 +113,6 @@ describe("startMeasure", () => {
     page.hide();
     page.fire("pagehide");
     expect(page.requests).toEqual([]);
-  });
-
-  it("webdriver with the __ldMeasureForce hook sends as a player does", () => {
-    const page = fakePage({ webdriver: true, force: true });
-    startMeasure(page.host, TODAY).solved();
-    page.hide();
-    expect(page.requests.map((r) => r.url)).toEqual([`${HIT}-s`]);
   });
 
   it("the ld-team flag sends nothing", () => {
