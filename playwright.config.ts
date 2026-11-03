@@ -10,6 +10,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}/`,
     permissions: ["clipboard-read", "clipboard-write"],
+    // The real play counter is unreachable from tests (a keepalive request sent on pagehide escapes page.route).
+    launchOptions: { args: ["--host-resolver-rules=MAP abacus.jasoncameron.dev ~NOTFOUND"] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

@@ -1,9 +1,10 @@
 import { SIZE, dailyBoard, isSolved, puzzleNumber, shareString } from "../core/index";
+import type { Measure } from "../measure/index";
 import { feedbackUrl } from "./feedback";
 import { arrowTarget, press, type Game } from "./game";
 
-/** Renders today's puzzle into `root` and wires mouse and keyboard play. */
-export function mountApp(root: HTMLElement, today: Date): void {
+/** Renders today's puzzle into `root`, wires mouse and keyboard play, and tells `measure` how far the player got. */
+export function mountApp(root: HTMLElement, today: Date, measure: Measure): void {
   root.innerHTML = `
     <h1>Lights Daily</h1>
     <p id="help">Turn every light off. Pressing a cell flips it and its neighbours. Arrow keys move, Enter or Space presses.</p>
@@ -50,6 +51,7 @@ export function mountApp(root: HTMLElement, today: Date): void {
     try {
       await navigator.clipboard.writeText(share());
       copyResult = "Copied to clipboard.";
+      measure.copied();
     } catch {
       copyResult = "Copy failed — try again.";
     }
@@ -68,6 +70,7 @@ export function mountApp(root: HTMLElement, today: Date): void {
     movesEl.textContent = String(game.moves);
     statusEl.textContent = solved ? `Solved in ${game.moves} moves! ${copyResult}`.trim() : "";
     copyEl.hidden = !solved;
+    if (solved) measure.solved();
     // Added to the page only once solved: a plain link, so nothing is sent until the player submits on GitHub.
     if (solved && !feedbackEl) {
       feedbackEl = document.createElement("a");
@@ -76,6 +79,7 @@ export function mountApp(root: HTMLElement, today: Date): void {
       feedbackEl.target = "_blank";
       feedbackEl.rel = "noopener noreferrer";
       feedbackEl.textContent = "Tell us what you thought";
+      feedbackEl.addEventListener("click", () => measure.feedback());
       copyEl.after(feedbackEl);
     }
   }
