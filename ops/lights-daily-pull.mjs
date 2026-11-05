@@ -2,16 +2,19 @@
 // Lights Daily play counts for Mindchains' `script` pull (ADR-0044), which runs the code below this first line as
 // `node -e` and reads each JSON line it prints. Reads only (GET /get) the game's public Abacus counters: one per local
 // date and step (v viewed, s solved, sc + copied, sf + feedback clicked, scf all), for today and the 6 days before.
-// Prints one item whose id carries the counts, so each change is a new item; a missing counter (404) is 0, any other
-// failure an error line. ABACUS_URL and ABACUS_QUIET_MS exist for the test against a local fake Abacus.
+// Prints one item whose id carries the counts, so each change is a new item; a missing counter (404) is 0. A read that
+// times out or cannot connect is tried twice more; any other failure, or a third failed try, is an error line. ABACUS_URL and ABACUS_QUIET_MS exist for the test against a local fake Abacus.
 const NS = "lights-daily-plays";
 const BASE = process.env.ABACUS_URL ?? "https://abacus.jasoncameron.dev";
 // Abacus limits each IP to 30 requests, and its count resets only after 10 s without one (gin-rate-limit's Redis store
-// keeps the time of the last hit, in whole seconds). So the 35 GETs go in bursts of at most 25, with 11 s of quiet between
-// them: about 13 s in all, inside the poll's 27 s (the 30 s gate call less the plugin's 3 s margin).
-const BURST = 25;
+// keeps the time of the last hit, in whole seconds). So the 35 GETs go in two bursts of at most 18, leaving 12 requests
+// of each window for retries, with 11 s of quiet between them. The poll gives the script 27 s (the 30 s gate call less
+// the plugin's 3 s margin). Worst case, a read in each burst takes all 3 tries: 2 x (3 x 2.2 s + 0.25 s + 0.5 s) + 11 s
+// = 25.7 s. When nothing fails, the pull takes about 12 s.
+const BURST = 18;
 const QUIET_MS = Number(process.env.ABACUS_QUIET_MS ?? 11_000);
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = 2200;
+const BACKOFF_MS = [250, 500];
 const STEPS = ["v", "s", "sc", "sf", "scf"];
 const DAYS = 7;
 
@@ -26,10 +29,20 @@ class ReadError extends Error {
   }
 }
 
+/** The response to GET /get of `key`; a try that times out or fails to connect is made again after a backoff. */
+async function get(key) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(`${BASE}/get/${NS}/${key}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (e) {
+      if (attempt === BACKOFF_MS.length) throw new ReadError(`abacus unreachable: ${e.cause?.code ?? e.name}`, key);
+      await sleep(BACKOFF_MS[attempt]);
+    }
+  }
+}
+
 async function read(key) {
-  const res = await fetch(`${BASE}/get/${NS}/${key}`, { signal: AbortSignal.timeout(TIMEOUT_MS) }).catch((e) => {
-    throw new ReadError(`abacus unreachable: ${e.cause?.code ?? e.name}`, key);
-  });
+  const res = await get(key);
   if (res.status === 404) return 0;
   if (!res.ok) throw new ReadError(`abacus answered HTTP ${res.status}`, key);
   const { value } = await res.json();
